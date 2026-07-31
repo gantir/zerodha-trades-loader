@@ -121,8 +121,7 @@ async function getZerodhaBrowserContext() {
   } = getConfiguration();
 
   const browser = await puppeteer.connect({
-    browserWSEndpoint: debug_url,
-    defaultViewport: null,
+    browserURL: debug_url,
   });
   consoleInfo(`Puppeteer connected to browser with debug URL "${debug_url}".`);
 
@@ -138,10 +137,28 @@ async function getZerodhaBrowserContext() {
 }
 
 /**
+ * Clears the value of a Vue-bound input element and returns it ready
+ * for typing. Modal inputs on Console retain their previous values when
+ * the dialog is reopened, so fields must be emptied before populating.
+ *
+ * @param {Object} element Puppeteer element handle
+ */
+async function clearInput(element) {
+  await element.evaluate((el) => {
+    const setter = Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      "value"
+    ).set;
+    setter.call(el, "");
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+}
+
+/**
  * This method adds a Trade transaction on provided
  * console webpage instance with provided transaction object.
  *
- * @param {Object} consoleWebpage Zerodha Console Webpage instance
+ * @param {Object} consoleWebpage Zerodha Console webpage instance
  * @param {Object} transaction Transaction object containing date, price and quantity
  *
  * @returns {Boolean} `true` when trade insertion was successful, false otherwise.
@@ -170,7 +187,11 @@ async function addTradeTransaction(consoleWebpage, transaction) {
     const typeSelectEl = await consoleWebpage.$(selectors.type_select);
     const addBtn = await consoleWebpage.$(selectors.add_button);
 
-    // Populate a trade transaction
+    // Clear fields (retain stale values from a previously opened dialog)
+    // and populate a trade transaction
+    await clearInput(dateInputEl);
+    await clearInput(priceInputEl);
+    await clearInput(quantityInputEl);
     await dateInputEl.type(transaction.date);
     await priceInputEl.type(transaction.price);
     await quantityInputEl.type(transaction.quantity);

@@ -1,2 +1,15 @@
+# macOS
 .DS_Store
-node_modules
+
+# Dependencies
+node_modules/
+
+# Node / npm
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# Transaction data files (per-fund import files)
+transactions.txt
+data/
