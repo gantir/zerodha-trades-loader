@@ -72,13 +72,20 @@ function getISODateString(rawDateString) {
  *
  * @returns {Array}
  */
-async function getTransactions() {
+async function getTransactions(filePath) {
   const { once } = require("events");
   const {
     source_data: { column_separator, columns },
   } = getConfiguration();
-  const filePath = commandArgs[0];
   const transactions = [];
+
+  if (!filePath || !require("fs").existsSync(filePath)) {
+    console.error(
+      consoleColors.Red,
+      `Transaction data file not found: "${filePath}". Provide the path to a transactions file as the first argument.`
+    );
+    process.exit(1);
+  }
 
   try {
     const lineReader = require("readline").createInterface({
@@ -103,6 +110,12 @@ async function getTransactions() {
     );
   } catch (e) {
     console.error(consoleColors.Red, `Error reading "${filePath}"`, e);
+    process.exit(1);
+  }
+
+  if (transactions.length === 0) {
+    console.error(consoleColors.Red, `No transactions found in "${filePath}".`);
+    process.exit(1);
   }
 
   return transactions;
@@ -128,6 +141,15 @@ async function getZerodhaBrowserContext() {
   const page = (await browser.pages())
     .filter((page) => page.url().includes(base_url))
     .pop();
+
+  if (!page) {
+    console.error(
+      consoleColors.Red,
+      `No open tab matching "${base_url}" found. Log in to Zerodha Console and open the holdings page in your browser.`
+    );
+    process.exit(1);
+  }
+
   consoleInfo(`Found Zerodha Console webpage with URL "${page.url()}".`);
 
   return {
@@ -203,14 +225,18 @@ async function addTradeTransaction(consoleWebpage, transaction) {
     await consoleWebpage.waitForSelector(selectors.success_notification, {
       visible: true,
     });
-    (await consoleWebpage.$(selectors.success_notification_close)).click();
+    const closeBtn = await consoleWebpage.$(
+      selectors.success_notification_close
+    );
+    if (closeBtn) await closeBtn.click();
     consoleInfo("Trade added successfully.");
     await sleep(1000);
   } catch (e) {
     console.error(
       consoleColors.Red,
-      `Error occured while adding trade for transaction ${transactionJSONString}`
+      `Error occurred while adding trade for transaction ${transactionJSONString}`
     );
+    console.error(consoleColors.Red, e);
     success = false;
   }
 
@@ -246,7 +272,7 @@ async function addTradeTransaction(consoleWebpage, transaction) {
   } else {
     console.error(
       consoleColors.Red,
-      "Errors occured while adding trade transactions."
+      "Errors occurred while adding trade transactions."
     );
   }
 

@@ -53,8 +53,8 @@ Here are the steps that you need to follow;
      and paste it as value of `webpage.debug_url` within `config.yml`.
 4. Now visit your [Zerodha Console](https://console.zerodha.com/portfolio/holdings/discrepancy/MF/) and open any of the fund tab by clicking on the left sidebar.
 5. Open your transaction statement (it might be a PDF or a spreadsheet) for the same fund and create `transactions.txt` file with details like date, price and quantity. Keep following things in mind while creating this file;
-   - This file is essentially a CSV file without column headers with one transaction per line.
-   - Make sure that transaction dates are parseable by JavaScript.
+   - This file is essentially a CSV file without column headers with one transaction per line, in `date|price|quantity` format. E.g. `2017-06-15|31.09|241.235`.
+   - Dates must be parseable by JavaScript; the ISO `YYYY-MM-DD` format is recommended.
    - By default, `|` symbol is used a column separator (defined in `config.yml`) but you can change it to something else.
    - Refer to `sample_transactions.txt` in this project to understand how the file structure needs to be.
 6. Once data file is ready, just run `npm start path/to/transactions.txt`.
